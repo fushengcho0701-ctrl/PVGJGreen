@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[FWU] J Green Weekly Order System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root { --fwu-main: #95c51b; --fwu-dark: #7aa314; --fwu-light: #f4f7f6; }
+        body { background-color: var(--fwu-light); color: #333; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        
+        /* Header & Nav */
+        .header-section { background: white; padding: 30px 0 10px 0; border-bottom: 5px solid var(--fwu-main); text-align: center; margin-bottom: 20px; }
+        .header-title { color: var(--fwu-main); font-weight: 800; letter-spacing: 2px; margin-bottom: 5px; }
+        .nav-pills .nav-link { color: #666; font-weight: 600; border-radius: 30px; padding: 10px 25px; margin: 0 5px; border: 1px solid #ddd; font-size: 0.9rem; }
+        .nav-pills .nav-link.active { background-color: var(--fwu-main); border-color: var(--fwu-main); color: white; }
+
+        /* 倒數計時橫條樣式 */
+        .countdown-banner {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            color: white;
+            font-weight: 700;
+            padding: 8px 15px;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.25);
+            font-size: 0.95rem;
+        }
+        .countdown-timer {
+            font-family: 'Courier New', Courier, monospace;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 2px 10px;
+            border-radius: 6px;
+            letter-spacing: 1px;
+            font-weight: 800;
+        }
+
+        .card-title { color: var(--fwu-main); font-weight: 700; border-left: 5px solid var(--fwu-main); padding-left: 12px; margin-bottom: 20px; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
+
+        /* Grid Setup (RWD) */
+        .row-cols-custom-4 > .col { flex: 0 0 auto; width: 25%; }
+        @media (max-width: 1400px) { .row-cols-custom-4 > .col { width: 33.33%; } }
+        @media (max-width: 992px) { .row-cols-custom-4 > .col { width: 50%; } }
+        @media (max-width: 576px) { .row-cols-custom-4 > .col { width: 100%; } }
+
+        /* Place Order 卡片樣式 */
+        .item-box { border-radius: 12px; overflow: hidden; background: white; border: 1px solid #eee; transition: 0.3s; height: 100%; display: flex; flex-direction: column; }
+        .item-box:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        .img-container { width: 100%; height: 260px; background: #fff; overflow: hidden; border-bottom: 1px solid #f0f0f0; }
+        .img-item { width: 100%; height: 100%; object-fit: contain; }
+        .box-body { padding: 15px; flex-grow: 1; }
+        .box-variety { color: var(--fwu-main); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
+        .box-item-name { font-size: 1.1rem; font-weight: 700; color: #1a1a1a; margin-top: 5px; margin-bottom: 2px; }
+        .box-intro { font-size: 0.85rem; color: #666; font-style: italic; margin-top: 3px; line-height: 1.3; }
+        
+        .order-control { padding: 10px 15px; border-top: 1px solid #eee; background: #fafafa; }
+        .unit-label { background: #f8f9fa; border: 1px solid #ced4da; border-left: none; padding: 0.375rem 0.5rem; border-radius: 0 0.375rem 0.375rem 0; font-weight: 800; min-width: 80px; text-align: center; font-size: 0.82rem; }
+        .unit-highlight { color: white; background: var(--fwu-main); border-color: var(--fwu-main); }
+
+        .btn-submit { background-color: var(--fwu-main); border: none; padding: 15px; font-weight: bold; border-radius: 12px; font-size: 1.25rem; color: white; transition: 0.2s; }
+        .btn-submit:disabled { background-color: #a0a0a0 !important; cursor: not-allowed; }
+
+        /* History Table 樣式 */
+        .table-history { background: white; border-radius: 8px; overflow: hidden; border: none; }
+        .table-history thead { background-color: var(--fwu-main); color: white; }
+        .table-history th { font-weight: 700; border: none; padding: 14px; vertical-align: middle; }
+        .table-history td { padding: 14px; border-color: #f1f1f1; vertical-align: middle; }
+
+        .badge-loc { background-color: #e9ecef; color: #495057; font-weight: 700; padding: 5px 10px; border-radius: 5px; }
+        .ts-cell { font-size: 0.75rem; color: #666; white-space: nowrap; padding: 8px !important; }
+
+        /* 右側固定即時摘要 */
+        .sticky-summary-box {
+            position: -webkit-sticky;
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            border: 2px solid var(--fwu-main);
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+        .summary-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px dashed #eee;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-section shadow-sm">
+    <h1 class="header-title text-uppercase">[FWU] J Green Weekly Order</h1>
+    
+    <div class="countdown-banner">
+        <span>⏰ <strong>Order Deadline:</strong> Friday 08:00 AM (Taiwan Time)</span>
+        <span>|</span>
+        <span><strong>Time Left:</strong> <span id="orderCountdown" class="countdown-timer">00d 00h 00m 00s</span></span>
+    </div>
+
+    <ul class="nav nav-pills justify-content-center mb-3" id="mainTab" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#orderTab">1. PLACE ORDER</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#historyTab" onclick="loadHistory()">2. ORDER HISTORY</button></li>
+    </ul>
+</div>
+
+<div class="container-fluid px-4 pb-5">
+    <div class="tab-content">
+        
+        <div class="tab-pane fade show active" id="orderTab">
+            <form id="orderForm">
+                <div class="row g-4">
+                    
+                    <div class="col-lg-9">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Location / Branch</h5>
+                                        <select name="location" id="inputLocation" class="form-select" required>
+                                            <option value="J Green Main">J Green - Main Branch</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Shipping Date</h5>
+                                        <input type="date" name="shippingDate" id="inputDate" class="form-control" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="orderGrid" class="row g-3 row-cols-custom-4 mb-5">
+                            <div class="text-center w-100 py-5 text-muted">
+                                <div class="spinner-border text-success spinner-border-sm me-2"></div>Loading Varieties...
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-3">
+                        <div class="sticky-summary-box p-3">
+                            <h5 class="fw-bold mb-3 pb-2 text-uppercase" style="color: var(--fwu-dark); border-bottom: 2px solid var(--fwu-main);">
+                                Live Summary
+                            </h5>
+                            <div id="liveSummaryContent" class="text-muted small py-3 text-center">
+                                No items selected yet.
+                            </div>
+                            <div id="liveSummaryTotal" class="mt-3 pt-2 fw-bold d-none text-end" style="border-top: 1px solid #ddd;">
+                                Total Items: <span id="summaryTotalCount" class="text-success fs-5">0</span>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" id="submitBtn" class="btn btn-submit w-100 shadow" style="padding: 12px; font-size: 1rem;">
+                                    SUBMIT ORDER
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+
+        <div class="tab-pane fade" id="historyTab">
+            <div class="card mx-auto" style="max-width: 1200px;">
+                <div class="card-body">
+                    <h5 class="card-title">Order Records</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Select Shipping Date:</label>
+                            <select id="historyDateSelect" class="form-select form-select-lg" onchange="filterHistory()">
+                                <option value="">-- Loading... --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="historyContent" class="table-responsive">
+                        <div class="text-center py-5 text-muted">Select a date above to view records.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade" id="summaryModal" data-bs-backdrop="static" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content border-0">
+        <div class="modal-header bg-success text-white"><h5>Order Confirmed</h5></div>
+        <div class="modal-body p-4" id="summaryList"></div>
+        <div class="modal-footer"><button class="btn btn-outline-success fw-bold" onclick="downloadCSV()">Download CSV</button><button class="btn btn-secondary" onclick="window.location.reload()">New Order</button></div>
+    </div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // ⚠️ 請填入新發布的 GAS Web App URL
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzZPNRc0U-BZxeYZ9SNMswVy2JZPNj1LQkHhdwN3cXDDYsCj8F_NMT7I03m_zYSkW-dyg/exec';
+    let allOrders = [];
+
+    /* 外銷單位規則判定 */
+    function getOrderUnit(category, name) { 
+        var catStr = (category || "").toString().toLowerCase().trim();
+        var nameStr = (name || "").toString().toLowerCase().trim();
+        
+        if (catStr.includes("oncidium") || nameStr.includes("oncidium")) {
+            return "Bunches";
+        }
+        if (catStr.includes("vanda") || nameStr.includes("vanda")) {
+            return "stems";
+        }
+        if (catStr.includes("anthurium") || nameStr.includes("anthurium")) {
+            return "box";
+        }
+        return "box"; 
+    }
+
+    /* 週五收單倒數計時引擎 (台灣時間 GMT+8) */
+    function initDeadlineCountdown() {
+        const timerElement = document.getElementById('orderCountdown');
+        
+        function updateTimer() {
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const taiwanNow = new Date(utc + (3600000 * 8));
+            
+            let targetFriday = new Date(taiwanNow.getTime());
+            targetFriday.setHours(8, 0, 0, 0);
+            
+            let daysUntilFriday = (5 - taiwanNow.getDay() + 7) % 7;
+            if (taiwanNow.getDay() === 5 && taiwanNow.getHours() >= 8) {
+                daysUntilFriday = 7;
+            }
+            
+            targetFriday.setDate(taiwanNow.getDate() + daysUntilFriday);
+            const msDifference = targetFriday.getTime() - taiwanNow.getTime();
+            
+            if (msDifference <= 0) {
+                timerElement.innerText = "00d 00h 00m 00s";
+                return;
+            }
+            
+            const days = Math.floor(msDifference / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((msDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((msDifference % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((msDifference % (1000 * 60)) / 1000);
+            
+            timerElement.innerText = `${String(days).padStart(2, '0')}d ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+        }
+        
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    }
+
+    window.onload = function() {
+        initDeadlineCountdown();
+
+        // 防範 Enter 鍵誤送出
+        const orderForm = document.getElementById('orderForm');
+        orderForm.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.keyCode === 13) {
+                if (event.target.id !== 'submitBtn') {
+                    event.preventDefault();
+                    return false;
+                }
+            }
+        });
+
+        // 載入品項資料
+        fetch(`${GAS_URL}?action=init`)
+        .then(res => {
+            if (!res.ok) throw new Error('Network response error');
+            return res.json();
+        })
+        .then(data => {
+            renderOrderGrid(data.varieties);    
+        })
+        .catch(err => {
+            console.error("Data Fetch Error: ", err);
+        });
+    };
+
+    /* 渲染下單相簿卡片網格 */
+    function renderOrderGrid(vars) {
+        const grid = document.getElementById('orderGrid');
+        if(!vars || vars.length === 0) {
+            grid.innerHTML = '<div class="text-center w-100 py-5 text-muted">Variety List 暫時無花卉資料。</div>';
+            return;
+        }
+
+        grid.innerHTML = vars.map(v => {
+            const varietyName = v[0];
+            const itemIntro   = v[1] || '';
+            const imgUrl      = v[2] || 'https://via.placeholder.com/1000x1414';
+            const category    = v[3] || '';
+            
+            const unit = getOrderUnit(category, varietyName);
+            const isHighlightUnit = (unit === 'Bunches' || unit === 'stems');
+            
+            return `
+                <div class="col">
+                    <div class="item-box shadow-sm">
+                        <div class="img-container">
+                            <img src="${imgUrl}" class="img-item" loading="lazy">
+                        </div>
+                        <div class="box-body">
+                            <div class="box-variety">${category}</div>
+                            <div class="box-item-name">${varietyName}</div>
+                            ${itemIntro ? `<div class="box-intro">${itemIntro}</div>` : ''}
+                        </div>
+                        <div class="order-control">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white fw-bold">Qty</span>
+                                <input type="number" class="form-control order-qty" data-name="${varietyName}" data-unit="${unit}" min="0" value="0" oninput="updateLiveSummary()">
+                                <span class="unit-label ${isHighlightUnit ? 'unit-highlight' : ''}">${unit}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    /* 即時購物車更新 */
+    function updateLiveSummary() {
+        const summaryContent = document.getElementById('liveSummaryContent');
+        const summaryTotal = document.getElementById('liveSummaryTotal');
+        const totalCountSpan = document.getElementById('summaryTotalCount');
+        
+        let selectedItems = [];
+        let totalItemsCount = 0;
+
+        document.querySelectorAll('.order-qty').forEach(input => {
+            const val = parseInt(input.value);
+            if(val > 0) {
+                selectedItems.push({ name: input.dataset.name, qty: val, unit: input.dataset.unit });
+                totalItemsCount += val;
+            }
+        });
+
+        if(selectedItems.length === 0) {
+            summaryContent.innerHTML = 'No items selected yet.';
+            summaryContent.classList.add('text-muted', 'text-center');
+            summaryTotal.classList.add('d-none');
+            return;
+        }
+
+        summaryContent.classList.remove('text-muted', 'text-center');
+        let html = '<div style="max-height: 400px; overflow-y: auto; padding-right: 5px;">';
+        selectedItems.forEach(item => {
+            html += `<div class="summary-item-row">
+                        <span class="fw-semibold text-truncate me-2" style="max-width: 140px;" title="${item.name}">${item.name}</span>
+                        <span class="badge bg-light text-dark fw-bold border">${item.qty} ${item.unit}</span>
+                     </div>`;
+        });
+        html += '</div>';
+        
+        summaryContent.innerHTML = html;
+        totalCountSpan.innerText = totalItemsCount;
+        summaryTotal.classList.remove('d-none');
+    }
+
+    /* 讀取歷史訂單 */
+    function loadHistory() {
+        const historyDiv = document.getElementById('historyContent');
+        historyDiv.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-success"></div><p>Fetching records...</p></div>';
+        fetch(`${GAS_URL}?action=getOrders`).then(res => res.json()).then(data => {
+            allOrders = data.slice(1);
+            const rawDates = [...new Set(allOrders.map(row => row[2]))];
+            const sortedDates = rawDates.filter(d => d).sort().reverse();
+            const dateSelect = document.getElementById('historyDateSelect');
+            if(sortedDates.length === 0) {
+                dateSelect.innerHTML = '<option value="">-- No Records --</option>';
+                historyDiv.innerHTML = '<div class="text-center py-5">No history yet.</div>';
+                return;
+            }
+            dateSelect.innerHTML = '<option value="">-- Select Shipping Date --</option>';
+            sortedDates.forEach(d => {
+                const displayDate = new Date(d).toLocaleDateString('en-CA');
+                dateSelect.innerHTML += `<option value="${d}">${displayDate}</option>`;
+            });
+            historyDiv.innerHTML = '<div class="text-center py-5 text-muted">Select a date above.</div>';
+        });
+    }
+
+    function filterHistory() {
+        const selectedDate = document.getElementById('historyDateSelect').value;
+        const historyDiv = document.getElementById('historyContent');
+        if(!selectedDate) return;
+
+        const filtered = allOrders.filter(row => row[2] == selectedDate);
+        if(filtered.length === 0) {
+            historyDiv.innerHTML = '<div class="text-center py-5">No data.</div>';
+            return;
+        }
+
+        const locGroups = {};
+        filtered.forEach(row => {
+            const dateObj = new Date(row[0]);
+            const ts = dateObj.getFullYear() + '-' + 
+                       String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(dateObj.getDate()).padStart(2, '0') + ' ' + 
+                       dateObj.toTimeString().split(' ')[0];
+            
+            const loc = row[1], varName = row[3], qtyStr = row[4];
+            if(!locGroups[loc]) locGroups[loc] = [];
+            locGroups[loc].push({ ts: ts, name: varName, qty: qtyStr });
+        });
+
+        let html = `<table class="table table-bordered table-history align-middle">
+                        <thead><tr><th>Location</th><th>Submit Time</th><th>Variety Name</th><th class="text-end">Qty / Unit</th></tr></thead>
+                        <tbody>`;
+        
+        for(let loc in locGroups) {
+            const rowCount = locGroups[loc].length;
+            locGroups[loc].forEach((item, index) => {
+                html += `<tr>`;
+                if(index === 0) {
+                    html += `<td rowspan="${rowCount}" class="fw-bold"><span class="badge-loc">${loc}</span></td>`;
+                }
+                html += `<td class="ts-cell font-monospace">${item.ts}</td><td>${item.name}</td><td class="text-end fw-bold text-success">${item.qty}</td></tr>`;
+            });
+        }
+        html += `</tbody></table>`;
+        historyDiv.innerHTML = html;
+    }
+
+    document.getElementById('orderForm').onsubmit = function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('submitBtn');
+        const items = [];
+        
+        document.querySelectorAll('.order-qty').forEach(input => {
+            if(parseInt(input.value) > 0) items.push({ name: input.dataset.name, qty: input.value, unit: input.dataset.unit });
+        });
+        if(items.length === 0) return alert("Please select at least one item.");
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Sending Order...
+        `;
+
+        const payload = { location: document.getElementById('inputLocation').value, shippingDate: document.getElementById('inputDate').value, items: items };
+        
+        fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) })
+        .then(res => {
+            if(!res.ok) throw new Error("Server Error");
+            return res.json();
+        })
+        .then(res => {
+            window.lastOrderInfo = payload;
+            let html = `<h6>Location: ${payload.location}</h6><table class="table table-sm">`;
+            items.forEach(i => html += `<tr><td>${i.name}</td><td class="text-end"><strong>${i.qty} ${i.unit}</strong></td></tr>`);
+            document.getElementById('summaryList').innerHTML = html + "</table>";
+            new bootstrap.Modal(document.getElementById('summaryModal')).show();
+        })
+        .catch(err => {
+            alert("Submission failed. Please check connection and try again.");
+            console.error(err);
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = "SUBMIT ORDER";
+        });
+    };
+
+    function downloadCSV() {
+        const info = window.lastOrderInfo;
+        let csv = "\uFEFF"; 
+        csv += `Location,${info.location}\nShipping Date,${info.shippingDate}\n\nVariety,Qty,Unit\n`;
+        info.items.forEach(i => { csv += `"${i.name}",${i.qty},${i.unit}\n`; });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `J_Green_Order_${info.shippingDate}.csv`.replace(/\s+/g, '_');
+        link.click();
+    }
+</script>
+</body>
+</html>
